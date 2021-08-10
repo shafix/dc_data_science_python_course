@@ -122,5 +122,50 @@ for key, value in world.items() :
 # numpy array
 np_arr = np.array([2,3,4])
 for x in np.nditer(np_arr) :
-    print( str(x) )
+    ...
+    
+# pandas data frame
+for label, row in brics.iterrows() :
+    ...
+    
+
+```
+## Loop through pandas data frame and adjust the row
+```
+# Creates new column and assigns the lenght of another column as value
+for lab, row in brics.iterrows() :
+    brics.loc[lab, "name_length"] = len(row["country"])
+
+# Same with using apply() - more performant/efficient
+brics["name_length"] = brics["country"].apply(len)
+```
+## Numpy random numbers
+```
+# Import numpy as np
+import numpy as np
+import numpy.random as rnd
+
+# Set the seed
+rnd.seed(123)
+
+print( rnd.rand() ) # generates a random float between 0 and 1
+print( rnd.randint(4, 8) ) # Generates a random integer between 4 and 7 (8 is excluded)
+```
+## Random number walk exercise
+```
+# Numpy is imported, seed is set
+# Initialize random_walk
+random_walk = [0]
+for x in range(100) :
+    step = random_walk[-1] # Set step: last element in random_walk
+    dice = np.random.randint(1,7) # Roll the dice
+    # Determine next step
+    if dice <= 2:
+        step = max(0, step - 1) # using max to make sure it can't go below 0
+    elif dice <= 5:
+        step = step + 1
+    else:
+        step = step + np.random.randint(1,7)
+    random_walk.append(step) # append next_step to random_walk
+print(random_walk)
 ```
