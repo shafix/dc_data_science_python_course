@@ -119,10 +119,27 @@ df[['column1','column2']].agg([function1,function2])
 df["column"].cumsum() # cumulative sum
 df["column"].cummax() # cumulative max
 ```
-## Duplicate dropping, counting:
+## Duplicate dropping, counting
 ```
 df.drop_duplicates(subset=["col1","col2"]) # distinct on col1, col
 df["col"].value_counts() # optional: sort=True ; normalize=True (for proportions)
+store_depts["department"].value_counts().sort_values(ascending=False) # another example of sorting by count
+store_depts["department"].value_counts().sort_index(ascending=False) # example of sorting by index
+print(dept_counts_sorted)
+```
+## Grouping for aggregate operations, pivot tables
+```
+df.groupby("col1")["col2"].opperation() # example df.groupby("color")["price"].mean() - average price for each color
+df.groupby("col1")["col2"].agg([func1, func2]) # getting multiple aggregates in one call
+df.groupby(["col1","col2"])[["col3","col4"]].opperation()
+df.groupby("col1")[["col3","col4"]].opperation() # aggregate multiple columns
+df.groupby("col1")[["col2","col3"]].opperation() # grouping by several columns
+df.groupby(["col1","col2"])[["col3","col4"]].opperation() # group by and aggregate multiple columns
+
+#pivot tables:
+dogs.pivot_table( values="weight", index="color", aggfunc=[func1, func2] ) # index=groupby, values=aggregatewhat
+#group by 2 columns pivot (gets mean by default), fill NaN with 0:
+dogs.pivot_table( values="weight", index="color", columns="breed", fill_value=0, margins=True ) # index=groupby1, columns=groupby2, values=aggregatewhat, fill_value=fillmissingwithsmtng, margins=showsummarystats
 ```
 ## Logical operations with numpy arrays
 ```
