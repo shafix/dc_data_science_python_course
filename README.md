@@ -77,28 +77,62 @@ df.values # A two-dimensional NumPy array of values.
 df.columns # An index of columns: the column names.
 df.index # An index for the rows: either row numbers or row names.
 ```
-## Sorting a data frame:
+## Sorting a data frame
 ```
 df.sort_values(["col_name1","col_name2"]) # optional ascending=[True,False] (for each column by which we are sorting)
 ```
+## Indexing
+```
+# Note: Indexing might be useful, but complicates things and should generally be avoided
+
+# New DF with "name" column values set as the index of the df ( values don't need to be unique! )
+dogs_indexed = dogs.set_index("name")
+
+# Reset the index back to normal (numeric indexes)
+dogs_indexed.reset_index() # drop=True - drops the column instead of putting it back to a normal column
+
+# Usefulness: dogs[dogs["name"].isin(["Dog1","Dog2"])] => dogs_indexed.loc[["Dog1","Dog2"]]
+
+# Multi-level indexes:
+dogs_multi_indexed = dogs.set_index(["name","breed"])
+# Usage: dogs_multi_indexed.loc[[("Dog1","Breed1"),("Dog2","Breed2")]]
+
+# Sort by index:
+dogs_multi_indexed.sort_index()
+dogs_multi_indexed.sort_index(level=["color","breed"], ascending=[True,False])
+
+```
 ## Fetching data from the pandas data frame
 ```
-print( cars['country'] ) # returns a "series" object with index(key) + value pairs, labeled 1d array
-print( cars[['country']] ) # returns a "data frame" object with the index + single selected column
-print( cars[['country','cars_per_cap']] ) # returns a "data frame" object with the index + selected columns
+cars['country'] # returns a "series" object with index(key) + value pairs, labeled 1d array
+cars[['country']] # returns a "data frame" object with the index + single selected column
+cars[['country','cars_per_cap']] # returns a "data frame" object with the index + selected columns
 
-print( cars[1:5] ) # returns a new data frame - slice of the old data frame or certain rows 
+cars[1:5] # returns a new data frame - slice of the old data frame or certain rows, works with series as well
 
-print( cars.loc['RU'] ) # returns a row as pandas series - row access location by index/label
-print( cars.loc[['RU']] ) # returns a row as pandas data frame - row access location by index/label
-print( cars.loc[['RU','US']] ) # returns rows as pandas data frame - row access location by index/label
-print( cars.loc[ ['RU','US'] , ['country','cars_per_cap'] ] ) # returns pandas frame of selected rows by index/label + selected columns
-print( cars.loc[ : , ['country','cars_per_cap'] ] ) # all rows, certain columns
+cars.loc['RU'] # returns a row as pandas series - row access location by index/label
+cars.loc[['RU']] # returns a row as pandas data frame - row access location by index/label
+cars.loc[['RU','US']] # returns rows as pandas data frame - row access location by index/label
+cars.loc[ ['RU','US'] , ['country','cars_per_cap'] ] # returns pandas frame of selected rows by index/label + selected columns
+cars.loc[ : , ['country','cars_per_cap'] ] # all rows, certain columns
 
-print( cars.iloc[[1]] ) # returns a row as pandas data frame - row access location by index number
-print( cars.iloc[[1,2,3]] ) # returns a row as pandas data frame - row access location by index number
-print( cars.iloc[ [1,2,3] , [1,2] ] ) # returns a row as pandas data frame - row access location by index number + column by column position number
-print( cars.iloc[ : , [1,2] ] ) # all rows, certain columns
+cars.iloc[[1]] # returns a row as pandas data frame - row access location by index number
+cars.iloc[[1,2,3]] # returns a row as pandas data frame - row access location by index number
+cars.iloc[ [1,2,3] , [1,2] ] # returns a row as pandas data frame - row access location by index number + column by column position number
+cars.iloc[ : , [1,2] ] # all rows, certain columns
+```
+## Slicing and subsetting with .loc and .iloc
+```
+breeds[2:5] # slice a list, get's elements 2,3,4
+dogs_srt=dogs.set_index(["breed","color"]).sort_index() # Set a multi-index and sort it
+dogs_srt.loc["breed1":"breed4"] # gets all columns for rows where the 1st index values are between x and y
+dogs_srt.loc[("breed1","color1"):("breed4","color3")] # gets all columns for rows between the specified tuple values x and y. Tuple in this case = ("breed","color") 
+dogs_srt.loc[:,"col1":"col5"] # all rows, certain columns by name
+dogs_srt.loc[("breed1","color1"):("breed4","color3"),"col1":"col5"] # certain rows by multi-index tuple values, certain columns by name
+dogs=dogs.set_index("date_of_birth:).sort_index() # set index to a date + sort
+dogs.loc["2010-01-05":"2010-01-10"] # get rows by date range
+dogs.loc["2010":"2011"] # get rows by date range (aproximate/partial, in this case 2010-01-01 <-> 2011-12-31)
+dogs.iloc[2:5, 1:4] # certain rows by index id, cetain columns by column number
 ```
 ## Summary statistics:
 ```
