@@ -80,10 +80,11 @@ cars = pd.DataFrame(my_dict)
 row_labels = ['US', 'AUS', 'JPN', 'IN', 'RU', 'MOR', 'EG']
 cars.index = row_labels
 ```
-## Data frame from csv
+## Data frame from csv and to csv
 ```
 import pandas as pd
 cars = pd.read_csv('cars.csv') # Optional: specify which column should be used as index : index_col = 0 
+cars_updated.to_csv('cars_updated.csv') # Write a new csv file with the updated data frame
 ```
 ## Getting info about a data frame:
 ```
