@@ -10,19 +10,34 @@ Code used when going through the DataCamp "Data Scientist with Python" course
 ```
 import matplotlib.pyplot as plt
 plt.plot(x,y)
-plt.show()
+
+or
+
+df.plot(x="date",y="weight",kind="line") # rot=45 - rotates x axis label by 45 degrees
 ```
 ## scatter plot
 ```
 import matplotlib.pyplot as plt
 plt.scatter(x,y) # Optional: s = bubble_size_arr ; c = bubble_color_dict ; alpha = opacity_float
 plt.xscale('log') # changes the plot to logarithmic scale
-plt.show()
+
+or 
+
+df.plot(kind="scatter", x="height", y="weight")
 ```
 ## histogram
 ```
 import matplotlib.pyplot as plt
 plt.hist(data,bins)
+
+or 
+
+df["height"].hist(bins=5)
+
+# Layering 2 histograms
+dogs[dogs["sex"]=="F"]["height"].hist(alpha=0.7)
+dogs[dogs["sex"]=="M"]["height"].hist(alpha=0.7)
+plt.legend(["F","M"])
 plt.show()
 ```
 ## x and y axis labels, plot title, enable grid
@@ -38,7 +53,11 @@ y_val_arr = [1000, 10000, 100000] # this specific example should probably use pl
 y_label_arr = ['1k', '10k', '100k']
 plt.yticks(y_val_arr, y_label_arr)
 ```
-
+## barplot
+```
+avg_weight_by_breed=dog_pack.groupby("breed")["weight_kg"].mean()
+avg_weight_by_breed.plot(kind="bar", title="...")
+```
 
 
 
@@ -174,6 +193,10 @@ df.groupby(["col1","col2"])[["col3","col4"]].opperation() # group by and aggrega
 dogs.pivot_table( values="weight", index="color", aggfunc=[func1, func2] ) # index=groupby, values=aggregatewhat
 #group by 2 columns pivot (gets mean by default), fill NaN with 0:
 dogs.pivot_table( values="weight", index="color", columns="breed", fill_value=0, margins=True ) # index=groupby1, columns=groupby2, values=aggregatewhat, fill_value=fillmissingwithsmtng, margins=showsummarystats
+pivot_df.mean(axis="index") # "index" is the default value, get's the mean for each column, but "columns" can be used to calculate the mean for each row as well.
+#example:
+temp_by_country_city_vs_year = temperatures.pivot_table( values="avg_temp_c", index=temperatures["country"]+' '+temperatures["city"], columns="year")
+temp_by_country_city_vs_year = temperatures.pivot_table( values="avg_temp_c", index=[temperatures["country"],temperatures["city"]], columns="year")
 ```
 ## Logical operations with numpy arrays
 ```
@@ -190,6 +213,15 @@ elif(area < 12) :
     print("medium")
 else :
     print("large")
+```
+## Dealing with missing values:
+```
+dogs.isna() # check which which columns for which rows has missing values (returs a boolean data frame)
+dogs.isna().any() # check which column has any missing values (returns a boolean series)
+dogs.isna().sum() # check how many missing values exist in each column (returns a numeric series)
+dogs.dropna() # drops rows where any of the columns have a missing value
+dogs.fillna(0) # replaces missing values with 0
+
 ```
 ## Filtering (subsetting) pandas data frames
 ```
