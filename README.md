@@ -306,4 +306,85 @@ for x in range(100) :
     random_walk.append(step) # append next_step to random_walk
 print(random_walk)
 ```
+## Data frame merging ( JOIN ):
+```
+# Merging two data frames Default : Inner
+new_df = df1.merge( df2, on=["column_name1","column_name2"] ) 
+# to add custom suffixes to clumns that exist in both tables : suffixes=('_df1','_df2')
+# to change join type (inner,left,right, outer) : how='left'
+# if key column names are different : on_left='col1a', on_right='col1b'
+# if key column names are different and are index we also need to specify that : left_index=True, right_index=True
+
+# Merging two data frames - ordered! Default : Outer
+pd.merge_ordered(df1, df2, [on=..., on_left=..., on_right=..., suffixes=..., how=..., ])
+# if we want to fill missing columns for row with value from previous: fill_method='ffill'
+
+# Merging two data frames - ordered, vague, closest!
+pd.merge_asof(df1, df2, [on=..., on_left=..., on_right=..., suffixes=..., how=..., direction=... ])
+```
+## Filtering join and anti-join to data-frames ( WHERE EXISTS / NOT EXISTS )
+```
+# Filtering join / semi-join - leaving rows in table1 only if they also exist in table2
+genres_tracks = genres.merge(top_tracks, on='gid')
+genre_exists = genres['gid'].isin(genre_tracks['gid'])
+top_genres = genres[genre_exists]
+
+# Another example:
+# Merge the non_mus_tck and top_invoices tables on tid
+# Gives info about the how many of the non-music tracks were sold
+tracks_invoices = non_mus_tcks.merge(top_invoices, on='tid')
+
+# Use .isin() to subset non_mus_tcks to rows with tid in tracks_invoices
+# Take only those non-music tracks that had any sales
+top_tracks = non_mus_tcks[non_mus_tcks['tid'].isin(tracks_invoices['tid'])]
+
+# Group the top_tracks by gid and count the tid rows
+# Count how many tracks had any sales per genre
+cnt_by_gid = top_tracks.groupby(['gid'], as_index=False).agg({'tid':'count'})
+ 
+# Merge the genres table to cnt_by_gid on gid and print
+# Get more genre info about those genres
+genres_and_how_many_tracks_had_sales = cnt_by_gid.merge(genres, on='gid')
+
+# Rename some columns to clarify
+genres_and_how_many_tracks_had_sales.rename(columns={
+    'tid': 'nr_of_tracks_that_had_sales',
+    'name': 'genre_name',
+    'gid': 'genre_id'},
+    inplace=True)
+    
+    
+# Anti-join - leaving rows in table1 only if they don't exist in table2
+genres_tracks = genres.merge(top_tracks, on='gid', how='left', indicator=True) # indicator creates a "_merge" column
+gid_list = genres_tracks.loc[ genres_tracks['_merge'] == 'left_only', 'gid' ]
+non_top_genres = genres[genres['gid'].isin(gid_list)]
+```
+## Concatenate / UNION data frames:
+```
+pd.concat([df1, df2]) 
+# ignore_index=True # optional if we want a new fresh index
+# keys=['tab1','tab2'] # if we want set labels, makes a multi-index with rows of each table starting from fresh index
+# sort=True # sorts the column names alphabetically
+# join='inner' # only returns that columns that exist in both tables
+df1.append([df2,df3]) # simpler version, only has ignore_index and sort options, always outter join
+```
+## Verify/validate integrity for merge and concatenate:
+```
+# merge:
+tracks.merge(specs, on='tid', validate='one_to_one') # raises error if the result merge is not one_to_one
+# concat:
+pd.concat([inv_feb,inv_mar], verify_integrity=True) # raises error if the indexes have overlapping values
+```
+## Query method : .query() - WHERE clause:
+```
+stocks.query('stock=="disney" or (stock=="nike" and close < 90)')
+```
+## Melting : .melt() - change the data frame from wide to long
+```
+social_fin.melt( id_vars=['financial','company'], value_vars=['2018','2019'], var_name=['year'], value_name='dolars' ) 
+# ^ keeps only "financial" and "company" columns original
+# ^ changes all other columns to "variable" and "value" column values
+# ^ from all other columns only keeps the ones listed under value_vars
+# ^ also naming the "variable" and "value" columns
+```
 
