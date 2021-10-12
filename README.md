@@ -387,4 +387,44 @@ social_fin.melt( id_vars=['financial','company'], value_vars=['2018','2019'], va
 # ^ from all other columns only keeps the ones listed under value_vars
 # ^ also naming the "variable" and "value" columns
 ```
+## Clean up special characters from text field and cast to numeric:
+```
+# List of characters to remove
+chars_to_remove = ['+',',','$']
+# List of column names to clean
+cols_to_clean = ['Installs','Price']
+
+# Loop for each column in cols_to_clean
+for col in cols_to_clean:
+    # Loop for each char in chars_to_remove
+    for char in chars_to_remove:
+        # Replace the character with an empty string
+        apps[col] = apps[col].apply(lambda x: x.replace(char, ''))
+
+# Convert Installs to float data type
+apps["Installs"] = apps["Installs"].astype('float')
+
+# Convert Price to float data type
+apps["Price"] = apps["Price"].astype('float')
+```
+## Unique values
+```
+# Unique values and nr of unique values in a column
+unique_categories = apps['Category'].unique()
+num_of_unique_categories = apps['Category'].nunique()
+
+# Row count for each unique value in a column 
+num_apps_in_category = apps['Category'].value_counts()
+```
+## Filter out rows where certain columns have null values - Query .notnull()
+```
+apps_with_size_and_rating_present = apps.query(' Rating.notnull() and Size.notnull() ')
+```
+## Group up values and filter whole groups
+```
+# Explanation: Takes each "category" as a separate group/entity, which becomes an array of rows(?) and allows to filter out groups
+large_categories = apps_with_size_and_rating_present.groupby('Category').filter(lambda x: len(x) >= 250) # Subset for categories with at least 250 apps
+```
+
+
 
