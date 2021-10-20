@@ -221,6 +221,7 @@ fig.savefig("filename.png") # can use quality=X [1-100] - compression ; can use 
 fig.set_size_inches([3,5])
 ```
 ## Automating figure creation
+```
 fig, ax = plt.subplots()
 sports=summer_2016_medals["Sport"].unique() # returns an array/series of unique sport categories
 for sport in sports:
