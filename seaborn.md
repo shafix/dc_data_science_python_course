@@ -31,7 +31,7 @@ plt.show()
 
 
 # Add color with hue
-# scatterplot example
+### scatterplot example
 ```
 hue_colors = { "Yes" : "black", "No": "red"}
 sns.scatterplot(
@@ -44,14 +44,15 @@ sns.scatterplot(
 )
 ```
 
-# countplot example
+### countplot example
 ```
 sns.countplot(x="smoker", data=tips, hue="sex")
 plt.show()
 ```
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-# Relational plots and subplots - relationship between two quantitative variables in several groups using subplots rather than hue
+# Relational plots and subplots
+relationship between two quantitative variables in several groups using subplots rather than hue
 
 # Scatter plot using relplot
 ```
@@ -66,8 +67,7 @@ sns.relplot(
 	col_order=[...] # provide array of values if custom ordering is needed
 )
 ```
-
-# Use col / row in replot() to create subgroups that are displayed as separate subplots
+Note: Use col / row in replot() to create subgroups that are displayed as separate subplots
 
 # Customize scatter plots (can be used with both scatterplot and relplot)
 ```
@@ -99,9 +99,10 @@ sns.relplot(
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# Categorical plots - distribution of a quantative variable within categories defined by a categorical variable
+# Categorical plots
+Distribution of a quantative variable within categories defined by a categorical variable
 
-# count plots, bar plots, box plots, point plots - using catplot()
+## count plots, bar plots, box plots, point plots - using catplot()
 ```
 sns.catplot( x="...", data=..., kind="count", order=[...,...,...] ) # simple count plot
 sns.catplot( x="...", y="...", data=..., kind="bar", order=[...,...,...] ) # simple bar plot
@@ -113,8 +114,7 @@ sns.catplot( x="...", y="...", data=..., kind="box", order=[...,...,...]) # simp
 # whis=[0,100] - change whiskers of the boxplot from default 1.5*IRQ to min and max values
 ```
 
-# point plot: 
-# categorical variable on X axis, quantitative mean on the Y axis + confidence intervals
+## point plot: categorical variable on X axis, quantitative mean on the Y axis + confidence intervals
 ```
 sns.catplot( x="...", y="...", data=..., kind="point", hue="...", order=[...,...,...] ) 
 # (...,join=False) to remove the joining lines
@@ -126,17 +126,17 @@ sns.catplot( x="...", y="...", data=..., kind="point", hue="...", order=[...,...
 ------------------------------------------
 
 # Customizing plots - style and color customizing
-# Presets : white, dark, whitegrid, darkgrid, ticks
+Presets : white, dark, whitegrid, darkgrid, ticks
 ```
 sns.set_style("whitegrid") # To set the style
 ```
-# Diverging color palette Examples: "RdBu", "PRGn", "RdBu_r", "PRGn_r"
-# Sequential color palette examples : "Greys", "Blues", "PuRd", "GnBu"
+Diverging color palette Examples: "RdBu", "PRGn", "RdBu_r", "PRGn_r"
+Sequential color palette examples : "Greys", "Blues", "PuRd", "GnBu"
 ```
 sns.set_palette("RdBu") # To set a color palette
 sns.set_palette(["#39A7D0","#36ADA4"]) # To set a custom color palette ( array member for each column )
 ```
-# Scale/context examples: "paper", "notebook", "talk", "poster"
+Scale/context examples: "paper", "notebook", "talk", "poster"
 ```
 sns.set_context("paper") # Set scale/context
 ```
@@ -144,40 +144,40 @@ sns.set_context("paper") # Set scale/context
 ------------------------------------------
 
 # Plot titles and axis labels
-# FacetGrid vs. AxesSubplot objects - A FacetGrid cotains one or more AxesSubplot objects
+FacetGrid vs. AxesSubplot objects - A FacetGrid cotains one or more AxesSubplot objects
 ```
 g = sns.scatterplot(....) # create a visalization
 type(g) # returns the object type
 ```
-# Some visualizations support FacetGrids, some don't
-# Some examples that do: relplot(), catplot()
-# Some examples that don't: scatterplot(), countplot()
+Some visualizations support FacetGrids, some don't
+Some examples that do: relplot(), catplot()
+Some examples that don't: scatterplot(), countplot()
 
-# Adding a title to a FacetGrid
+### Adding a title to a FacetGrid
 ```
 g = sns.catplot(...)
 g.fig.suptitle("My title"[,y=1.03]) # y - optional title height parameter
 ```
 
-# Adding a title to a AxesSubplot
+### Adding a title to a AxesSubplot
 ```
 g = sns.boxplot(...)
 g.set_title("My title"[,y=1.03]) # y - optional title height parameter
 ```
 
-# Adding titles to FacetGrid subplots
+### Adding titles to FacetGrid subplots
 ```
 g = sns.catplot(..., col="Group")
 g.fig.suptitle("My title"[,y=1.03]) # alters the overall title
 g.set_titles("This is {col_name}") # dynamically set subplot titles
 ```
 
-# Adding axis labels
+### Adding axis labels
 ```
 g.set( xlabel="...", ylabel="..." )
 ```
 
-# Rotating tick labels
+### Rotating tick labels
 ```
 plt.xticks(rotation=90)
 ```
