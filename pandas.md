@@ -361,6 +361,130 @@ apps_with_size_and_rating_present = apps.query(' Rating.notnull() and Size.notnu
 # Explanation: Takes each "category" as a separate group/entity, which becomes an array of rows(?) and allows to filter out groups
 large_categories = apps_with_size_and_rating_present.groupby('Category').filter(lambda x: len(x) >= 250) # Subset for categories with at least 250 apps
 ```
+## Lambda function + map
+```
+nums = [48, 6, 9, 21, 1]
+square_all = map( lambda num: num**2 , nums )
+print(square_all) # <map object...>
+print(list(square_all)) # [2304, 36, 81, 441, 1]
+```
+## Try / Except error and exception handling
+```
+def sqrt(x):
+	if x < 0:
+		raise ValueError('x must be non-negative') # Raises an exception
+	try:
+		return x ** 0.5
+	except: # <- can use except TypeError here if we only want to catch those
+		print('x must be an int or a float') # Just prints a message
+```
+## Iterables and iterators
+### String example
+```
+word = 'Data'
+word_iterator = iter(word)
+next(word_iterator) # 'D'
+next(word_iterator) # 'a'
+...
+word_iterator = iter(word)
+print(*word_iterator) # 'D a t a'
+```
+### Dictionary example
+```
+some_dict = { 'a': 1, 'b': 2 }
+for key, value in some_dict.items():
+	print(key, value)
+```
+### File connection example:
+```
+file = open('file.txt')
+it = iter(file)
+print(next(it)) # "This is the first line."
+print(next(it)) # "This is the second line."
+```
+## Enumerate
+```
+some_list = ['a','b','c']
+e = enumerate(some_list)
+e_list = list(e)
+print(e_list) [(1,'a'),(2,'b'),(3,'c')]
+
+some_list = ['a','b','c']
+for index, value in enumerate(some_list, start=10): #starts index from 10
+	print(index, value)
+```
+## Zip
+```
+some_list_1 = ['a','b','c']
+some_list_2 = ['ss','ig','ut']
+z = zip(some_list_1, some_list_2)
+z_list = list(z)
+print(z_list) # [('a','ss'),('b','ig'),('c','ut')]
+print(*z) # ('a','ss'),('b','ig'),('c','ut')
+
+some_list_1 = ['a','b','c']
+some_list_2 = ['ss','ig','ut']
+for z1, z2 in zip(some_list_1, some_list_2):
+	print(z1, z2)
+	
+z = zip(some_list_1, some_list_2)
+list1, list2 = zip(*z)
+print(list1 == some_list_1) # true
+print(list2 == some_list_2) # true
+```
+## Loading large files into memory - loading data in chunks 
+```
+result=[]
+for chunk in pd.read_csv('data.csv', chunksize=1000):
+	result.append(sum(chunk['x']))
+total = sum(result)
+# or
+total=0
+for chunk in pd.read_csv('data.csv', chunksize=1000):
+	total += sum(chunk['x'])
+```
+## List comprehensions - shorter/single-line for loops
+```
+nums = [3,5,7,8]
+new_nums = [num + 1 for num in nums]
+
+pairs = [ (num1,num2) for num1 in range(0,2) for num2 in ranger(6,8) ]
+print(pairs) # [ (0,6), (0,7), (1,6), (1,7) ]
+
+matrix = [[col for col in range(5)] for row in range(5)]
+```
+### Conditionals in comprehensions
+```
+nums = [num ** 2 for num in range(10) if num % 2 == 0]
+nums = [num ** 2 if num % 2 == 0 else 0 for num in range(10) ]
+```
+### Dictionary comprehensions
+```
+pos_neg = { num: -num for num in range(9) }
+```
+## Generators - same as comprehension, but does not produce a list, just stores the defintion as a generator object.
+```
+# Generators can be iterated over to generate the values on demand. Or converted to a list to materlialize the definition.
+# Basically avoids storing the whole result in list, rather generates elements on the fly by demand. Good for generating large data sets.
+gen = (num for num in range(6))
+for num in gen: 
+	print(num)
+print(list(gen))
+print(next(gen)) # 0
+print(next(gen)) # 1
+```
+### Generator functions and keyword "yield"
+```
+def num_sequence(n):
+	i = 0
+	while i < n:
+		yeald i
+		i += 1
+result = num_sequence(5)
+for item in result:
+	print(item)
+```
+
 
 
 
