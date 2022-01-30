@@ -181,3 +181,197 @@ g.set( xlabel="...", ylabel="..." )
 ```
 plt.xticks(rotation=90)
 ```
+
+### Pandas histogram vs seaborn histogram
+```
+df['Award_Amount'].plot.hist()
+sns.distplot(df['Award_Amount'])
+```
+
+# Seaborn distribution plot / distplot ( one variable )
+```
+sns.distplot(df['COLUMN_NAME'])
+# bins=10 - nr of bins
+# kde=False - disables KDE
+# hist=False - Removes the columns
+# rug=True - creates a "rug"
+# kde_kws={'shade':True} - customize KDE by passing arguments/keywords to the underlying kdeplot function
+```
+
+# Linear regression lines / plots ( two variables ) / regplot / scatterplot / lmplot
+```
+# Note that regplot and lmplot are similar, but lmplot is more powerful/robust
+# Faceting - supplying "hue" or "col"/"row" to plot multiple graphs. 
+sns.regplot(x='COLUMN1', y='COLUMN2', data=df)
+sns.lmplot(x='COLUMN1', y='COLUMN2', data=df)
+# hue='COLUMN3' - add multiple plots distinguished by color, based on suplied column
+# col='COLUMN3' - add multiple plots, side by side, based on suplied color, can also use "row" instead
+```
+
+# Visualization styling / aesthetics / style
+```
+sns.set() # initilizes the default seaborn theme for a plot
+sns.set_style(...) # sets a specific style , for example "white", "dark", "whitegrid", "darkgrid", "ticks"
+sns.despine(...) # removes the "spines" of the plot, left=True, right=True, etc..
+```
+
+# Adjusting plot colors
+```
+sns.set(color_codes=True)
+sns.distplot(df['Award_Amount'], color='g') # apply green color
+
+# Cycle through various palettes
+for p in sns.palettes.SEABORN_PALETTES:
+	sns.set_palette(p)
+	sns.palplot(sns.color_palette()) # displays palette
+	sns.distplot(df['Tuition']) 
+	plt.show()
+# circular colors = when the data is not ordered, example sns.color_palette("Paired",12)
+# sequential colors = when the data has a consistent range from low to high, for example sns.color_palette("Blues",12)
+# diverging colors = when both the low and high values are interesting, for example sns.color_palette("BrBG",12)
+```
+
+# Customizing seaborn plots with matplotlib
+```
+# Pass "Axes" to seaborn functions
+fig, ax= plt.subplots() # create figure with axes
+sns.distplot(df['Tuition'], ax=ax) # pass axes to seaborn plot
+ax.set(xlabel="...", ylabel="...", xlim=(0,1000), title="...") # set xlabel, ylabel, x limit and title of the plot
+
+# Combining plots
+fig, (ax0, ax1) = plot.subplots( nrows=1, ncols=2, sharey=True, figsize=(7,4) )
+sns.distplot(df['Tuition'], ax=ax0)
+sns.distplot(df.query[' State="MN" ']['Tuition'], ax=ax1)
+ax1.set( xlabel=""Tuition (MN)", xlim(0,70000) )
+ax1.axvline( x=20000, label='My Budget', linestyle='--' )
+ax1.legend()
+```
+
+# Categorical plot types
+stripplot and swarmplot - shows all individual observations
+boxplot, violinplot, lvplot - abstract representation of the categorical data
+barplot, pointplot, countplot - statistical estimates
+```
+sns.stripplot( data=df, y='...', x='...', jitter=True )
+sns.swarmplot( data=df, y='...', x='...', hue='...' ) # not too good for large data sets
+
+sns.boxplot( data=df, y='...', x='...' )
+sns.violinplot( data=df, y='...', x='...' )
+sns.lvplot( data=df, y='...', x='...' ) # letter value plot, quick to render, scales well, hybrid between box and violin plots
+
+sns.barplot( data=df, y='...', x='...', hue='...' )
+sns.pointplot( data=df, y='...', x='...', hue='...' )
+sns.countplot( data=df, y='...', x='...', hue='...' )
+```
+
+# Regression plots
+regression plot, residual plot
+
+```
+sns.regplot(x='COLUMN1', y='COLUMN2', data=df, marker='+') # regression plot
+sns.residplot(x='COLUMN1', y='COLUMN2', data=df) # residual plot
+
+sns.regplot(x='COLUMN1', y='COLUMN2', data=df, order=2) # polynomial regression plot
+sns.residplot(x='COLUMN1', y='COLUMN2', data=df , order=2) # polynomial residual plot
+
+sns.regplot(x='month', y='total_rentals', data=df, order=2, x_jitter=.1) # categorical regression plot with jitter
+sns.regplot(x='month', y='total_rentals', data=df, order=2, x_estimator=np.mean) # categorical regression plot with estimator 
+
+sns.regplot(x='temp', y='total_rentals', data=df, x_bins=4) # regression plot with bins
+```
+
+# Matrix plots using heatmap and pandas' crosstab and correlation functions
+```
+df_crosstabbed = pd.crosstab(df['month'], df['weekday']), values=df['total_rentals'], aggfunc='mean').round(0)
+sns.heatmap(df_crosstabbed, annot=True, fmt='d', cmap='YlGnBu', cbar=False, linewidths=.5, center=df_crosstabbed.loc[9,6]) 
+# annot=True - turns off annotations
+# fmt = 'd' - formats the results as integers
+# cmap = 'YlGnBu' - custom color map of yellow, green, blue
+# cbar = False - remove color bar
+# linewidts = .5 - adds .5 spacing between cells
+# center=df_crosstabbed.loc[9,6]) - centering the heatmap on a certain area of the crosstabbed data, concentrates the color scheme more
+
+df_corr = df.corr()
+sns.heatmap(df_corr) - shows correlation between variables
+```
+
+# Combining plots into larger vizualizations using facting with FacetGrid, factorplot and lmplot - data aware plots
+Note that creating these plots requires the data to be in "tidy format" - single observation per row, variables as columns
+factorplot plots categorical data on a FacetGrid, simpler to use than sns.FacetGrid()
+lmplot plots scatter and regression plots on a FacetGrid, simpler to use than sns.FacetGrid()
+```
+# Boxplot facetgrid example using sns.FacetGrid()
+g = sns.FacetGrid( df, col='HIGHDEG' )
+g.map( sns.boxplot, 'Tuition', order=['1','2','3','4'] )
+
+# Pointplot example using sns.FacetGrid()
+g2 = sns.FacetGrid(df,  ow="Degree_Type", row_order=['Graduate', 'Bachelors', 'Associates', 'Certificate'])
+g2.map(sns.pointplot, 'SAT_AVG_ALL')
+
+# Boxplot facetgrid example using sns.factorplot()
+sns.factorplot(x="Tuition", data=df, col='HIGHDEG', kind='box')
+
+# Pointplot example using sns.factorplot()
+sns.factorplot(data=df, x='SAT_AVG_ALL', kind='point', row='Degree_Type', row_order=['Graduate', 'Bachelors', 'Associates', 'Certificate'])
+
+# scatterplot facetgrid example using sns.FacetGrid()
+g = sns.FacetGrid( df, col='HIGHDEG' )
+g.map( plt.scatter, 'Tuition', 'SAT_AVG_ALL' )
+
+# scatterplot facetgrid example using lmplot()
+sns.lmplot( data=df, x='Tuition', y='SAT_AVG_ALL', col='HIGHDEG', fit_reg=False ) # fit_reg=False disables regression lines
+sns.lmplot( data=df, x='Tuition', y='SAT_AVG_ALL', col='HIGHDEG', row='REGION' )
+sns.lmplot(data=df, x='SAT_AVG_ALL', y='Tuition', col="Ownership", row='Degree_Type', row_order=['Graduate', 'Bachelors'], hue='WOMENONLY', col_order=inst_ord)
+```
+
+# PairGrid and pairplot - data aware plots - useful for looking at relationships between pairs of variables
+```
+# PairGrid examples
+g = sns.PairGrid( df, vars=["col1","col2"] )
+g = g.map( plt.scatter ) # scatter plots only
+or
+g = g.map_diag( plt.hist ) # histogram for the diag
+g = g.map_offdiag( plt.scatter ) # scatter for the off-diag
+
+# pairplot examples
+sns.pairplot(df, vars=["co1","co2"], kind='reg', diag_kind='hist')
+sns.pairplot(df.query('BEDROOMS<3'), vars=["co1","co2","col3"], hue='BEDROOMS', palette='husl', plot_kws={'alpha': 0.5})
+sns.pairplot(data=df, x_vars=["fatal_collisions_speeding", "fatal_collisions_alc"], y_vars=['premiums', 'insurance_losses'], kind='scatter',hue='Region',palette='husl')
+```
+
+# JointGrid and jointplot - data aware grid that compares the distribution of data between two variables
+```
+# JointGrid example
+g = sns.JointGrid( df, x='col1', y='col2' )
+g = g.plot( sns.regplot, sns.distplot )
+or
+g = g.plot_joint(sns.kdeplot)
+g = g.plot_marginals(sns.kdeplot, shade=True)
+g = g.annotate(stats.pearsonr)
+
+# jointplot example
+sns.jointplot( data=df, x='col1', y='col2', kind='hex' )
+
+# more complex jointplot example
+g = ( sns
+	.jointplot(
+		x='Tuition',
+		y='ADM_RATE_ALL',
+		kind='scatter',
+		xlimit=(0, 25000),
+		marginal_kws=dict(
+			bins=15,
+			rug=True
+		),
+		data=df.query(' UG < 2500 & Owndership == "Public" ')
+	)
+	.plot_joint(sns.kdeplot)
+)
+```
+
+# Plot usage:
+Univariate distribution - mainly use distplot, rugplot and kdeplot are also possible alternatives
+Regression analysis - lmplot works great for regression analysis and supports faceting. Also scatterplot and regplot. Helps determine linear relationships between data.
+Categorical - boxplot, violin plot.
+
+
