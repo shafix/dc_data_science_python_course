@@ -517,5 +517,204 @@ for item in result:
 ```
 
 
+# Importing data
+
+## Importing Text files
+
+### Reading a text file
+```
+filename = 'xxx.txt'
+
+# Open file for reading, close manualy
+file = open(filename, mode='r') # r=read, w=write
+print(file.closed) # check if the file is closed or not
+text = file.read()
+file.close()
+print(text)
+
+## open using a context manager 
+
+with open(filename, mode='r') as file: # context manager , binding a variable inside context manager construct
+	text = file.read()
+	print( text )
+	
+# read line by line
+with open('moby_dick.txt') as file:
+    print(file.readline())
+    print(file.readline())
+    print(file.readline())
+```
+
+### Importing/reading a flat file
+Flat files : Text files containing table data, contains header, records (rows of fields or attributes), columns(feature or attribute)
+
+Importing with NumPy:
+```
+# Importing numeric flat file using NumPy : loadtxt() and genfromtxt()
+import numpy as np
+
+filename = '...'
+data = np.loadtxt( filename, delimiter=',' ) # skiprows=1, usecols=[0,2], dtype=str
+print(data)
+
+data = np.genfromtxt('titanic.csv', delimiter=',', names=True, dtype=None) # names=True means we have headers, dtype=None allows implicit data type assigning
+```
+
+Importing flat files / csv with Pandas:
+```
+import pandas as pd
+data = pd.read_csv('my-csv-file.csv') # nrows = 5, header=None, sep='\t', comment='#', na_values='Nothing'
+data.head()
+```
+
+### Importing "other" files:
+
+Pickled files:
+```
+import pickle
+with open('pickled_fruit.pkl', 'rb') as file: # rb = read only, binary
+	data = pickle.load(file)
+print(data)
+```
+
+Importing Excel spreadsheets:
+```
+import pandas as pd
+file = 'xxx.xlsx'
+data = pd.ExcelFile(file)
+print(data.sheet_names)
+df1 = data.parse('some_sheet_name') # sheet name as a text
+df2 = data.parse(0) # sheet index as a float
+# some other arguments for data.parse(...):
+# skiprows=[0], names=['Country','AAM due to War (2002)'], usecols=[0]
+```
+
+Importing SAS and stata files:
+```
+Import pandas as pd
+from sas7bdat import SAS7BDAT
+with SAS7BDAT('xxx.sas7bdat') as file:
+	df_sas = file.to_data_frame()
+	
+data = pd.read_stata('xxx.dta') # stata files
+```
+
+Importing HDF5 (large quantities of numerical data, terabytes, can scan to exabytes)
+```
+import h5py
+filename = 'xxx.hdf5'
+data = h5py.File(filename, 'r') # read
+```
+
+Importing MATLAB files:
+```
+import scipy.io
+filename = 'xxx.mat'
+mat = scipy.io.loadmat(filename)
+```
+
+
+### Querying relation databases
+```
+from sqlalchemy import create_engine
+engine = create_engine('sqlite:///Northwind.sqlite')
+print(engine.table_names()) # check tables
+
+con = engine.connect()
+rs = con.execute('SELECT * FROM...')
+df = pd.DataFrame(rs.fetchall())
+df.columns = rs.keys()
+con.close()
+
+or 
+
+with engine.connect() as con:
+	rs = con.execute('SELECT * FROM...')
+	df = pd.DataFrame(rs.fetchall())
+	df.columns = rs.keys()
+	
+or
+
+df = pd.read_sql_query('SELECT * FROM ...', engine)
+```
+
+
+# Importing data from the web
+
+## HTTP requests
+
+### urllib package , urlopen()
+```
+from urllib.request import urlretrieve
+
+#csv
+url = 'http:.../xxx.csv'
+urlretrieve(url, 'xxx.csv') # save the file locally
+df = pd.read_csv('xxx.csv', sep=';')
+
+#xls
+url = 'http:.../xxx.xls'
+xls = pd.read_excel(url, sheet_name = None)
+```
+
+### urllib package , GET request using urlopen() and Request()
+```
+from urllib.request import urlretrieve, Request
+url = 'https...'
+request = Request(url)
+response = urlopen(request)
+html = response.read()
+response.close()
+```
+
+### Get request using requests package
+```
+import requests
+url = 'https...'
+r = requests.get(url)
+text = r.text
+```
+
+### Using Beautiful soup
+```
+from bs4 import BeautifulSoup
+import requests
+url = '...'
+r = requests.get(url)
+html_doc = r.text
+soup = BeautifulSoup(html_doc)
+
+pretty_soup = soup.prettify()
+soup_title = soup.title
+soup_text = soup.get_text()
+a_tags = soup.find_all('a') # fetch all hyperlinks
+
+for link in a_tags:
+ print(link.get('href')) # print all hyperlink urls
+```
+
+## APIs and JSONS
+
+### Loading JSONs in python
+```
+import json
+with open('xxx.json', 'r') as json_file:
+	json_data = json.load(json_file)
+	
+for key, value in json_data.items():
+	print( key + ':', value)
+```
+
+### Connecting to an API
+```
+import requests
+url = '...?t=hackers' # query string ?t=hackers
+r = requests.get(url)
+json_data = r.json()
+for key, value in json_data.items():
+	print( key + ':', value)
+```
+
+
 
 
