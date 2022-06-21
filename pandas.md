@@ -716,5 +716,422 @@ for key, value in json_data.items():
 ```
 
 
+# Cleaning data
+
+### Check column info
+```
+print(df.dtypes) # check data types of each column of the data frame
+df.info() # check data frame columns, types and missing values per column
+print(df['some_column'].describe()) # describe a specific column
+```
+
+### Changing data type of a column
+```
+df['revenue'] = df['revenue'].str.strip('$') # remove $ signs from the start or end of the string
+df['revenue'] = df['revenue'].astype('int') # cast string to integer
+assert df['revenue'].dtype == 'int' # check if the data type is now correct, throws error if given condition is not met
+
+df['marriage_status'] = df['marriage_status'].astype('category') # convert integer (in this case) into a "category"
+
+df['some_date_column'] = pd.to_datetime( df['some_date_column'] ) # convert object(string) to datetime
+```
+
+### Check if date is in the future
+```
+import datetime as dt 
+today_date = dt.date.today()
+df[ df['some_date_column'] > today_date ] # selects only rows that are later than current date
+``` 
+
+### Drop / fix data that is out of bounds in some way
+```
+movies = movies[ movies['rating'] <= 5 ] # only keep movies where the rating is equal or lower to the logical maximum of 5
+or
+movies.drop( movies[ movies['rating'] <= 5 ].index, inplace = True ) # drop the rows that don't meed a certain condition
+
+assert movies['rating'].max() <= 5 # check if there are no more out of bounds values
+
+movies.loc[ movies['rating'] > 5, 'rating' ] = 5 # assign the value 5 to any rows where the value is above 5
+```
+
+### Identifying and dealing with duplicates
+```
+print( df.duplicated() ) # gives true/false for each row whether an exact same row exists elsewhere in the data frame
+print( df[ df.duplicated() ] ) # shows the rows that are duplicated
+
+# arguments for the duplicated() and drop_duplicates() methods : 
+# subset=['a','b'] - which columns to check for duplication
+# keep='first'/'last'/False - instructs which duplicates to keep (False = all)
+# inplace=True - for drop_duplicates() - drops in place
+# Example wiht sorted..
+df_duplicates_sorted = df[ df.duplicated( subset=['first_name','last_name'], keep=False ) ].sort_values(by = 'first_name')
+
+df.drop_duplicates(inplace = True) # drop complete duplicates in place
+
+# Assigning a value for duplicate rows/columns using .groupby() and .agg(), for example keeping an average of two weights for a person
+column_names = ['first_name', 'last_name']
+summaries = { 'height': 'max', 'weight': 'mean' }
+df = df.groupby( by = column_names ).agg(summaries).reset_index()
+```
+
+### Identifying and dealing with rogue category members (using anti joins and inner joins)
+```
+# Finding inconsistent categories example
+inconsistent_categories = set( df['blood_type'] ).difference( category_df['blood_type'] ) # fetch the categories that don't exist in the correct category df
+print(inconsistent_categories) # show which categories exist in df which dont exist in category_df
+inconsistent_rows = df['blood_type'].isin(inconsistent_categories) # fetch the rows with inconsistent categories, returns boolean values
+print(df[inconsistent_rows]) # shows rows that have inconsistent categories
+consistent_df = df[~inconsistent_rows] # create new df with only the consistent rows
+```
+
+### Identifying and fixing data consistency
+```
+marriage_status = df['marriage_status'] # returns series of values
+marriage_status.value(counts) # returns count of each value in series
+or
+df.groupby('marriage_status').count() # returns count of each value in a column of a data frame
+
+df['marriage_status'] = df['marriage_status'].str.lower() # assign lower values of string to deal with capitalization inconsistency
+df['marriage_status'] = df['marriage_status'].str.strip() # remove leading and trailing spaces from strings
+```
+
+### Collapsing data into categories
+```
+group_names = ['0-200k','200-500k','500k+']
+
+# using qcut()
+df['income_group'] = pd.qcut( df['income'], q=3, labels=group_names ) # cut into 3 parts using qcut() <- BAD
+
+# using cut()
+ranges = [0, 200000, 500000, np.inf]
+df['income_group'] = pd.cut( df['income'], bins=ranges, labels=group_names ) # cut into given ranges using cut()
+```
+
+### Cutting number of categories
+```
+mapping = { 'a':'vowel','b':'consonant','c':'consonant' } # create the mapping
+df['letter'] = df['letter'].replace(mapping) # assign mapped values
+print( df['letter'].unique() ) # check unique values
+```
+
+### Cleaning text data
+```
+# Phone number cleaning example
+df["phone_num"] = df["phone_num"].str.replace("+", "00") # Replace + with 00
+digits = df["phone_num"].str.len() # grab number of digits for each string value
+df.loc[ digits < 10, "phone_num" ] = np.nan # assign NaN where the value is less than 10 digits
+digits = df["phone_num"].str.len() # grab number of digits for each string value again
+assert digits.min() >= 10 # use assert that there are no more phone numbers with less than 10 digits
+assert df["phone_num"].str.contains("+|-").any() == False # check if any phone numbers still have +'s or -'s
+
+# Regexp example
+df["phone_num"] = df["phone_num"].str.replace(r'\D+', '') # regexp to replace non digits with empty string
+```
+
+### Converting farenheit to celsius
+```
+df_fah = df.loc[ df["temp"] > 40, "temp" ]
+df_cels = (df_fah - 32) * (5/9)
+df.loc[ df["temp"] > 40, "temp" ] = df_cels
+```
+
+### Unifying date formats
+```
+df['bday'] = pd.to_datetime( df['bday'], infer_datetime_format=True, errors = 'coerce' ) # tries to infer format and assigns NaT for rows where it could not
+df['bday'] = df['bday'].dt.strftime("%d-%m-%Y") # change date format
+```
+
+### Coverting euros to dollars
+```
+acct_eu = banking['acct_cur'] == 'euro' # Find values of acct_cur that are equal to 'euro'
+banking.loc[acct_eu, 'acct_amount'] = banking.loc[acct_eu, 'acct_amount'] * 1.1 # Convert acct_amount where it is in euro to dollars
+banking.loc[acct_eu, 'acct_cur'] = 'dollar' # Unify acct_cur column by changing 'euro' values to 'dollar'
+assert banking['acct_cur'].unique() == 'dollar' # Assert that only dollar currency remains
+```
+
+### Crossfield validation 
+```
+# Summing up various flight class ticket numbers to see if it matches total passangers
+sum_classes = flights[ [ '1st class', '2nd class', '3rd class' ] ].sum(axis = 1)
+passenger_equ = sum_classes == flights['total_passengers']
+incosistent_pass = flights[~passenger_equ]
+consistent_pass = flights[passenger_equ]
+
+# Validating age using birth date
+import datetime as dt
+users['bday'] = pd.to_datetime( users['bday'] ) # convert to dtime
+today = db.date.today() # get current date
+age_manual = today.year - users['bday'].dt.year # calculate age
+age_equ = age_manual == users['age'] # check where they match
+inconsistent_age = users[~age_equ] # filter inconsistent rows
+consistent_age = users[age_equ] # filter consistent rows
+print("Number of inconsistent ages: ", inconsistent_age.shape[0])
+```
+
+# Data completeness - dealing with missing data
+
+### Looking for missing values
+```
+df.isna() # returns rows with True/False for each column depending on whether the value is missing or not
+df.isna().sum() # returns a number for each column of how many rows have missing data in that column
+
+# Get a better picture using describe
+missing = df[df['some_column'].isna()]
+complete = df[~df['some_column'].isna()]
+missing.describe()
+complete.describe()
+```
+
+### Visualizing missing values with missingno
+```
+import missingno as msno
+import matplotlib.pyplot as plt
+msno.matrix(df)
+plt.show()
+
+#or with sorted.. ex missing inv_amount seems to be correlated with age
+banking_sorted = banking.sort_values(by = 'age')
+msno.matrix(banking_sorted)
+plt.show()
+```
+Missingness types:
+Missing Completely at Random (MCAR) - missing data independent of other attributes/values
+Missing at Random (MAR) - systemic relationship between missing and other observed values (for example missing CO2 only for low temperatures)
+Missing Not at Random (MNAR) - systemic relationship between missing data and unobserved values (for example missing temp data for high temperatures)
+
+### Dropping / replacing missing values
+```
+co2_mean = df['co2'].mean()
+df_dropped = df.dropna( subset = ['co2'] ) # drops rows where the value for specified column is missing
+df_replaced = df.fillna( {'co2': co2_mean} ) # replaces rows with mean
+```
+
+# Record linkage - calculating similarity between strings to link records
+minimum edit distance - how close the two strings are
+example using Levenshtein method and fuzzywuzzy package
+```
+from fuzzywuzzy import fuzz
+fuzz.WRation('Reeding','Reading') # similarity ratio = 86, 0 means not similar at all, 100 means exact match
+# also possible to compare string with array of strings and get a sorted array of tupples including similarty rank and ratio
+# Example with linking free text state values (Cali,California,Calefornia, New York, New York City..) with pre-defined categories (California, New York)
+from fuzzywuzzy import process
+for state in categories['state']: # correct categories
+	matches = process.extract( state, survey['state'], limit = survey.shape[0] ) # find potential matches for that category in the df column
+	for potential_match in matches:
+		if potential_match[1] >= 80: # if match is at least 80%
+			survey.loc[ survey['state'] == potential_match[0], 'state' ] = state # replace the state with the pre-defined category
+```
+
+Record pair linking with the recordlinkage package
+Example: 2 census data sets with person data like name,surname,dateofbirth,suburd,state,address,etc...
+Using "blocking" to reduce the number of pairs generated and improve performance - for example only match records from the same state
+```
+# Import recordlinkage
+import recordlinkage
+
+# Create indexing object
+indexer = recordlinkage.Index()
+
+# Generate pairs blocked on state
+indexer.block('state')
+pairs = indexer.index(census_A, census_B)
+
+# Create a Compare object
+compare_cl = recordlinkage.Compare()
+
+# Find exact matches for pairs of date_of_birth and state
+compare_cl.exact('date_of_birth', 'date_of_birth', label='date_of_birth')
+compare_cl.exact('state', 'state', label='state')
+
+# Find similar matches for pairs of surname and address_1 using string similarity
+compare_cl.string('surname', 'surname', threshold=0.85, label='surname')
+compare_cl.string('address_1', 'address_1', threshold=0.85, label='address_1')
+
+# Find matches
+potential_matches = compare_cl.compute(pairs, census_A, census_B)
+
+# Only take matches where 3 or more columns match (exact or partial)
+matches = potential_matches[potential_matches.sum(axis = 1) => 3]
+
+# Get indices from census_B only
+duplicate_rows = matches.index.get_level_values(1)
+
+# Isolate rows in census_B that are not duplicates of census_A
+census_B_new = census_B[~census_B.index.isin(duplicate_rows)]
+
+# Link the two data frames
+full_census = census_A.append(census_B_new)
+```
+
+
+
+
+# Working with Dates and Times
+
+### Dates
+- The date() class takes a year, month, and day as arguments
+- A date object has accessors like .year , and also methods like .weekday()
+- date objects can be compared like numbers, using min() , max() , and sort()
+- You can subtract one date from another to get a timedelta
+- To turn date objects into strings, use the .isoformat() or .strftime() methods
+```
+from datetime import date
+
+# Extract month from dtime
+print( some_dtime.month ) 
+
+# Order an array of dates
+dates_ordered = sorted(dates_scrambled)
+
+ # Subtract the two dates and print the number of days
+start = date(2007, 5, 9)
+end = date(2007, 12, 13)
+print((end - start).days)
+
+# Convert to ISO and US formats
+iso = "Our earliest hurricane date: " + first_date.isoformat()
+us = "Our earliest hurricane date: " + first_date.strftime("%m/%d/%Y")
+```
+
+### Datetimes
+- The datetime() class takes all the arguments of date() , plus an hour, minute, second, and microsecond
+- All of the additional arguments are optional; otherwise, they're set to zero by default
+- You can replace any value in a datetime with the .replace() method
+- Convert a timedelta into an integer with its .total_seconds() method
+- Turn strings into dates with .strptime() and dates into strings with .strftime()
+```
+from datetime import datetime
+
+# Create a datetime object
+dt = datetime(2017, 10, 1, 15, 26, 26)
+
+# Replace the year with 1917
+dt_old = dt.replace(year=1917)
+
+# Print the results in ISO 8601 format, which is basically "%Y-%m-%dT%H:%M:%S"
+print(dt.isoformat())
+
+# String into datetime using strptime and format:
+s = '2017-02-03 00:00:01' # Starting string, in YYYY-MM-DD HH:MM:SS format
+fmt = "%Y-%m-%d %H:%M:%S" # Write a format string to parse s
+d = datetime.strptime(s, fmt) # Create a datetime object d
+
+# Get datetime from timestamp:
+ts = 1514665153
+dtime = datetime.fromtimestamp(ts)
+```
+### Durations:
+```
+# Extract duration in seconds (timedelta)
+trip_duration = trip["end"] - trip["start"]
+trip_length_seconds = trip_duration.total_seconds()
+
+# Sum total duration using timedelta array
+total_elapsed_time = sum(onebike_durations)
+
+# Number of separate timedelta objects in the array
+number_of_trips = len(onebike_durations)
+  
+# Average duration time timedelta array
+print(total_elapsed_time / number_of_trips)
+
+# Calculate shortest and longest trips (durations)
+shortest_trip = min(onebike_durations)
+longest_trip = max(onebike_durations)
+```
+
+### Timezone aware datetimes
+- A datetime is "timezone aware" when it has its tzinfo set. Otherwise it is "timezone naive"
+- Seing a timezone tells a datetime how to align itself to UTC, the universal time standard
+- Use the .replace() method to change the timezone of a datetime , leaving the date and time the same
+- Use the .astimezone() method to shi the date and time to match the new timezone 
+- dateutil.tz provides a comprehensive, updated timezone database
+```
+from datetime import datetime, timedelta, timezone
+from dateutil import tz
+
+dt = datetime(2017, 10, 1, 15, 26, 26, tzinfo=timezone.utc) # 2017-10-01T15:26:26+00:00
+
+pst = timezone(timedelta(hours=-8))
+dt = datetime(2017, 10, 1, 15, 26, 26, tzinfo=pst) # 2017-10-01T15:26:26-08:00
+
+# Show dtime in UTC:
+dt_as_utc = dt.astimezone(timezone.utc)
+print('Original:', dt, '| UTC:', dt_as_utc.isoformat()) # Original: 2017-10-01 15:23:25-04:00 | UTC: 2017-10-01T19:23:25+00:00
+
+
+# Create a timezone object and replace timezone of a datetime object
+et = tz.gettz('America/New_York')
+some_dtime = some_dtime.replace(tzinfo=et)
+
+
+# Local vs nonlocal (UK) example:
+# Create the timezone object
+uk = tz.gettz('Europe/London')
+
+# Pull out the start of the first trip
+local = some_dtime
+
+# What time was it in the UK?
+notlocal = local.astimezone(uk)
+
+# Print them out and see the difference
+print(local.isoformat())
+print(notlocal.isoformat())
+
+# Add hours to a date
+start = datetime(2017, 3, 12, tzinfo = tz.gettz('America/New_York'))
+end = start + timedelta(hours=6)
+```
+
+### Reading date and time data in Pandas
+- When reading a csv, set the parse_dates argument to be the list of columns which should be parsed as datetimes
+- If seing parse_dates doesn't work, use the pd.to_datetime() function
+- Grouping rows with .groupby() lets you calculate aggregates per group. For example,.first() , .min() or .mean().resample() groups rows on the basis of a datetime column, by year, month, day, and soon
+- Use .tz_localize() to set a timezone, keeping the date and time the same
+- Use .tz_convert() to change the date and time to match a new timezone
+```
+import pandas as pd
+
+# Reading in columns as dates not as strings from CSV
+rides = pd.read_csv( 'xxx.csv', parse_dates = ['start_date','end_date'] )
+or
+rides['start_date'] = pd.to_datetime( rides['start_date'], format = '%Y-%m-%d %H:%M:%S' )
+
+# Creating a duration column
+rides['duration'] = rides['end_date'] - rides['start_date'] # results in a timedelta column
+rides['duration'].dt.total_seconds().head(5) # show as seconds
+```
+### Summarizing datetime data in Pandas data frames
+```
+rides['duration'].mean()
+rides['duration'].sum()
+rides['duration'].sum() / timedelta(days=91) # out of 91 days, how long (0-100%) of that time is the total duration?
+
+rides['member_type'].value_counts() # how many times each unqiue member type used the bike
+rides['member_type'].value_counts() / len(rides) # What % of the time was used by each member type? (0-100%)
+
+rides['duration_in_seconds'] = rides['duration'].dt.total_seconds()
+rides.groupby('member_type')['duration_in_seconds'] # how much time did each member group use the bike
+
+rides.resample('M', on = 'start_date')['duration_in_seconds'].mean() # how long was the average ride for each month?
+```
+
+### Extra methods for working with datetime
+```
+# Localizing a timezone-unaware data frame datetime column to some timezone
+rides['start_date'] = rides['start_date'].dt.tz_localize('America/New_York', ambiguous = 'NaT') # sets unclear results as NotaTime
+
+# Converting an already localized timestamp
+rides['start_date'] = rides['start_date'].dt.tz_convert('Europe/London')
+
+# Return some part of the datetime
+rides['start_date'].dt.year # returns year
+rides['start_date'].dt.day_name() # returns day of the week in text (Monday)
+
+# Shifting rows around
+rides['end_date'].shift(1) # shifts the end_date column one row forward (good for aligning start date with end date..)
+```
+
 
 
