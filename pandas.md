@@ -1134,4 +1134,200 @@ rides['end_date'].shift(1) # shifts the end_date column one row forward (good fo
 ```
 
 
+# Exploratory data analysis
+## Validating , cleaning, visualizing, filtering
+```
+# for each value in the series, count occurances and sort by value (which is the index in this case)
+some_df.value_counts().sort_index() 
+
+# replace some values with other values
+pounds = pounds.replace([98, 99], np.nan) # or .. ounces.replace([98, 99], np.nan, inplace=True) to replace in place
+
+# make a histogram
+import matplotlib.pyplot as plt
+plt.hist(birth_weight.dropna(), bins=30)
+plt.xlabel('Birth weight (lb)')
+plt.ylabel('Fraction of births')
+plt.show()
+
+# Boolean series
+preterm = nsfg['prglngth'] < 37 # was the pregnancy term less than 37 weeks?
+preterm.mean() # what % of babies were born in less than 37 weeks?
+birth_weight = birth_weight[~preterm] # only keep births that had >= 37 weeks ... ~ = NOT, & = AND, | = OR
+```
+## Distributions - Using PMF, CDF, PDF, KDE.. Single variable statistics
+### Probability mass function (PMF) - the probability that you get x if you guess for a given x
+```
+educ = gss['educ'] # gss is a DF
+pmf_educ = Pmf(educ, normalize=True) # value counts as fractions
+pmf_educ.bar(label='educ') # unlike the histogram it does not put values into bins, shows all unique values
+plt.show()
+```
+### Cumulative distribution functions (CDF) - probability that you get <= x if you guess for a given x
+Example: {1,2,2,3,5}
+PMF(1)=1/5, PMF(2)=2/5, PMF(3)=1/5, PMF(5)=1/5
+CDF(1)=1/5, CDF(2)=3/5, CDF(3)=4/5, CDF(5)=5/5
+```
+# Create a CDF and plot it
+age = Cdf(gss['age']) # gss is a DF
+age.plot()
+plt.show()
+
+# Get probability of something
+q=51
+p=cdf(q)
+
+# Get value for a given probability
+p=0.75
+q=cdf.inverse(p)
+```
+### Probability density functions (PDF) - Using KDE from seaborn
+```
+# with normal distribution
+from scipy.stats import norm # normal distribution
+xs = np.linspace(-3, 3) # array of equaly spaced points from -3 to 3
+ys = norm(0, 1).cdf(xs) # creates a normal distribution object with mean 0 and standard deviation 1, then evaluates the cdf against the normal distribution
+plt.plot(xs, ys, color='gray') # plots the cdf over the normal distribution
+
+# KDE plot
+import seaborn as sns
+
+xs = np.linspace(-3, 3)
+ys = norm.pdf(xs)
+plt.plot(xs, ys, color='gray')
+sns.kdeplot(sample)
+```
+Usage:
+CDF - for exploration
+PMF - if there are a small number of unique values
+KDE - if there are a lot of unique values
+
+## Exploring relationships between variables
+### Scatter plot (elaborate)
+```
+brfss = pd.read_hdf('brfss.hdf5','brfss')
+height = brfss['HTM4']
+weight = brfss['WTKG3']
+
+# Using transparency with alpha, making markers smaller with markersize
+plt.plot(height, weight,'o', markersize=1, alpha=0.2) 
+
+# Adding random noise/jittering by using mean and standard deviation for both weight and height
+height_jitter = height + np.random.normal(0, 2, size=len(brfss))
+weight_jitter = weight + np.random.normal(0, 2, size=len(brfss))
+plt.plot(height_jitter, weight_jitter,'o', markersize=1, alpha=0.02) 
+
+# Zooming on the relevant data
+plt.axis([140,200,0,160]) # Height 140-200cm, weight 0-160kg
+
+plt.xlabel('Height in cm')
+plt.ylabel('Weight in kg')
+plt.show()
+```
+### Violin plot
+```
+data = brfss.dropna(subset=['AGE','WTKG3'])
+sns.violinplot(x='AGE', y='WTKG3', data=data, inner=None)
+plt.show()
+```
+### Box plot
+```
+sns.boxplot(x='AGE', y='WTKG3', data=data, whis=10)
+plt.yscale('log') # optional - change to logorhytmic scale using yscale
+plt.show()
+```
+### Coefficient of correlation - quantifying the strenght between variable relationships - LINEAR relationships
+```
+columns = ['HTM4','WTKG3','AGE']
+subset = brfss[columns]
+subset.corr()
+```
+### Simple linear regression
+```
+from scipy.stats import linregress
+res = linregress(xs, ys) # slope interests us here - strenght of the effect
+
+# Plot the regression line
+fx = np.array([xs.min(), xs.max()])
+fy = res.intercept + res.slope * fx
+plt.plot(fx, fy,'-')
+```
+
+## Multivariate Thinking - Multiple regression, logistic regression - non-linear relationships
+### Linear and multiple regression from statsmodels (ols = ordinary least squares)
+```
+import statsmodels.formula.api as smf
+results = smf.ols('INCOME2 ~_VEGESU1', data=brfss).fit()
+results.params # we get linear regression slope and intercept here, same as using linregress
+```
+
+```
+gss = pd.read_hdf('gss.hdf5','gss')
+
+# Check how education effects income
+results = smf.ols('realinc ~ educ', data=gss).fit() # We are trying to predict real income using education to inform our predictions
+results.params
+# educ = 3586.xxxx means for each additional year of education an additional 3586 dollars of yearly income are prediction
+
+# Adding age to the equation 
+results = smf.ols('realinc ~ educ + age', data=gss).fit() # Here we added age to also inform our prediction, using + to signify additive contribution
+results.params
+# educ = 3655.xxxx and age 83.73 means that education contribution increased slightly and age only contributes 83 dollars per year
+
+# Checking the effect of age
+grouped = gss.groupby('age')
+mean_income_by_age = grouped['realinc'].mean()
+plt.plot(mean_income_by_age,'o', alpha=0.5)
+plt.xlabel('Age (years)')
+plt.ylabel('Income (1986 $)')
+
+# Adding a quadratic term - no idea what this means anymore
+gss['age2'] = gss['age']**2
+model = smf.ols('realinc ~ educ + age + age2', data=gss)
+results = model.fit()
+results.params
+# Somehow this boosted the effect of age to 1748 dollars per year
+```
+
+### Visualizing non-linear regressions results, generating predictions
+```
+df = pd.DataFrame()
+df['age'] = np.linspace(18, 85)
+df['age2'] = df['age']**2
+
+df['educ'] = 12 # Assigns 12 to each row of the df
+df['educ2'] = df['educ']**2
+
+pred12 = results.predict(df)
+
+plt.plot(df['age'], pred12, label='High school')
+plt.plot(mean_income_by_age,'o', alpha=0.5)
+
+plt.xlabel('Age (years)')
+plt.ylabel('Income (1986 $)')
+plt.legend()
+
+df['educ'] = 14
+df['educ2'] = df['educ']**2
+pred14 = results.predict(df)
+plt.plot(df['age'], pred14, label='Associate')
+
+df['educ'] = 16
+df['educ2'] = df['educ']**2
+pred16 = results.predict(df)
+plt.plot(df['age'], pred16, label='Bachelor'
+```
+
+### Logicstic regression with categorical variables like Sex/Race
+```
+formula = 'realinc ~ educ + educ2 + age + age2 + C(sex)'
+results = smf.ols(formula, data=gss).fit()
+results.params
+
+formula = 'gunlaw ~ age + age2 + educ + educ2 + C(sex)'
+results = smf.logit(formula, data=gss).fit()
+results.params
+```
+
+
 
