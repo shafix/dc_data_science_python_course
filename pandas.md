@@ -1329,5 +1329,144 @@ results = smf.logit(formula, data=gss).fit()
 results.params
 ```
 
+### Locating and dealing with missing values in a data frame
+```
+some_df.shape # check the shape of the df
+some_df.isnull() # returns a df with the same shape filled with True for null values, false for not null
+some_df.isnull().sum() # shows the count of missing values for each column
+some_df.drop("some_column", axis="columns", inplace=True) # completely drop a column
+some_df.dropna( subset=['col1','col2'], inplace=True ) # drop rows where one of the given columns is null
+```
+### Dealing with data types
+```
+# Checking and changing data type
+print(apple.dtypes)
+print(apple.price.dtype)
+apple['price'] = apple.price.astype('float') # converts to float
+
+# Combining two columns into one datetime column
+apple['date']=apple.date.str.replace('/','-') # converts 2/13/18 to 2-13-18 if needed
+combined = apple.date.str.cat(apple.time, sep=' ') # combines date column with time column using empty space as separator
+apple['date_and_time'] = pd.to_datetime(combined) # make a new column - combined date and time in standard format 2018-02-13 16:00:00
+
+# Setting some column as the index for the data frame
+apple.set_index('date_and_time', inplace=True)
+print(apple.index) # check the index
+print(apple.columns) # check that the index column is no longer a part of the columns
+```
+### Analyzing the data
+.value_counts() # counts unique values in a series, best suited for categorical data
+.value_counts(normalize=True) # same but returns proportions rather than counts (ex .89 for 89%)
+.value_counts(normalize=True, dropna=False) # same but also includes null/na values
+
+Filtering out by one condition
+```
+white = ri[ri.driver_race == 'White'] # take only rows where the driver race is white and make a new data frame
+white['stop_outcome'].value_counts(normalize=True) # stop outcomes for white drivers only
+```
+Filtering out by multiple conditions
+```
+female_and_arrested = ri[ (ri.driver_gender == 'F') & (ri.is_arrested == True) ] # & = AND , | = OR
+```
+Mean of a boolean series to get the percentage of True values
+```
+ri.is_arrested.value_counts(normalize=True) # proportion of false and true
+ri.is_arrested.mean() # percentage of true
+```
+Using groupby to split into groups and then get the proportion of true boolean values for each group
+```
+ri.groupby('district').is_arrested.mean()
+ri.groupby(['district','gender']).is_arrested.mean()
+```
+Searching by string containment
+```
+# Police searches where the search type string contains the word "inventory", also returns False when the value is na/null
+ri['inventory'] = ri.search_type.str.contains('Inventory', na=False) 
+searched = ri[ri.search_conducted == True] # rows where a search was conducted at all
+searched.inventory.mean() # How many searches included an inventory search?
+```
+Single variable change over time : Accessing datatime values, plotting based on datetime values
+```
+apple.date_and_time.dt.month # returns integer of the month from the datetime value
+apple.set_index('date_and_time', inplace=True)
+apple.index.month # same, but don't need to use the dt suffix
+monthly_price=apple.groupby(apple.index.month).price.mean() # shows the mean price per month
+
+import matplotlib.pyplot as plt
+monthly_price.plot() # plot the monthly prices
+plt.xlabel(...)
+plt.ylabel(...)
+plt.title(...)
+plt.show()
+```
+Subplots - relationship between two variables over time. Resampling
+```
+monthly_price = apple.price.resample('M').mean() # resample by month, index becomes a date (last day of each month), mean daily price for each month
+monthly_volumne = apple.volume.resample('M').mean() # mean daily volume for each month
+monhtly = pd.concat([monthly_price, monthly_volumne],axis='columns')
+monhtly.plot(subplots=True)
+plt.show()
+```
+Frequency table / crosstab:
+```
+table = pd.crosstab(ri.driver_race, ri.driver_gender) # Tally of how many times each combination of values occurs
+table = table.loc['Asian':'Hispanic'] # only takes races between asian and hispanic races
+table.plot(kind='bar') # frequency table values become bars of magnitude, each gender gets a separate color bar, each race gets a bar set
+# Note, can also stack the bars using stacked=True
+plt.show()
+```
+Mapping one set of values to another
+```
+mapping = {'up':True, 'down':False}
+apple['is_up'] = apple.change.map(mapping)
+
+# Ordered bar plot, rotating bars
+search_rate = ri.groupby('volation').search_conducted.mean() # for each type of violation how often was a search conducted
+search_rate.sort_values()
+search_rate.plot(type='barh') # note the barh vs bar
+```
+### Exploring given data set
+```
+df.describe() # gives basic statistics for each column
+df[['col1','col2']].plot(kind='box') # box plot is a visual alternative to describe
+
+weather['TDIFF'] = weather['TMAX'] - weather['TMIN']
+print(weather['TDIFF'].describe())
+weather['TDIFF'].plot(kind='hist', bins=20) # making a histogram for numeric variable
+```
+### Slice a data frame, data frame opeations
+```
+temp = weather.loc[:,'TAVG':'TMAX'] # all rows, columns between TAVG and TMAX columns
+temp.sum() # returns sum of each column
+temp.sum(axis='columns').head() # sum for each rows (sums all column values)
+```
+### using category data type (more efficient, allows logical ordering
+```
+ri.stop_length.memory_usage(deep=True) # shows column memory usage, ex 6'068'041 = ~6mb
+cats = pd.CategoricalDtype(['short','medium','long'], ordered=True)
+ri['stop_length'] = ri.stop_length.astype(cats) 
+ri.stop_length.memory_usage(deep=True) # shows column memory usage, now 779'118 = <1mb
+ri.stop_length.head() # dtype now shoes category and lists categories along with the ordering
+ri[ri.stop_length > 'short'].shape # can now use comparison operators
+```
+### Merging data sets / data frames
+```
+apple.reset_index(inplace=True) # currently date_and_time is the index, but the index gets lost during the merge, so we save it by moving it into a column
+apple_high = pd.merge(left=apple, right=high, left_on='date', right_on='DATE', how='left')
+apple_high.set_index('date_and_time',inplace=True) # replace the index again
+```
+### Multi index series + converting to df using unstack(), creating a pivot_table
+```
+search_rate = ri.groupby(['violation','driver_gender']).search_conducted.mean()
+type(search_rate) # series.Series, not a data frame!
+type(search_rate.index) # indexes.multi.MultiIndex # multi level index, one level for violation and one for driver_gender
+# outter index becomes kind of like rows, while inner index becomes kind of like columns
+search_rate.loc['Equipment'] # returns F and M search rates for "Equipment" violation (row)
+search_rate.loc['Equipment','M'] # returns search rates for "Equipment" violation (row) and only for males (column)
+# converting multi index series to a data frame using unstack()
+type(search_rate.unstack()) # frame.DataFrame
+# same final result can be reached using a pivot_table
+ri.pivot_table(index='violation',columns='driver_gender',values='search_conducted') # the default pivot table aggregation is mean()
+```
 
 
